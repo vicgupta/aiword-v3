@@ -3,7 +3,7 @@ FROM python:3.12-slim
 
 WORKDIR /tmp/news
 
-RUN apt-get update && apt-get install -y nginx supervisor gunicorn
+RUN apt-get update && apt-get install -y nginx supervisor gunicorn uvicorn
 
 # RUN pip install --no-cache-dir fastapi "uvicorn[standard]" sqlmodel apscheduler pytz gunicorn python-dotenv
 

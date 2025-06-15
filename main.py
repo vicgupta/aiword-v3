@@ -1,8 +1,9 @@
 import uvicorn
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from sqlmodel import SQLModel, Field, create_engine, Session, select
+from sqlmodel import SQLModel, Field, create_engine, Session, select, func
 from typing import Optional, List
+from pydantic import BaseModel
 from datetime import datetime
 import os
 import smtplib
@@ -38,6 +39,8 @@ class Word(SQLModel, table=True):
     example: str
     published_date: datetime = Field(default_factory=datetime.utcnow, nullable=False)
 
+class UserCount(BaseModel):
+    count: int
 
 # --- Database Setup ---
 DATABASE_URL = "sqlite:///database.db"
@@ -71,10 +74,10 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 
 origins = [
-    "https://www.hiblazar.com"
+    "https://www.hiblazar.com",
     # "https://www.your-production-frontend.com",
     # "http://localhost:7000",
-    # "http://127.0.0.1:5500"
+    "http://127.0.0.1:5500"
 ]
 
 # --- 3. Add the CORSMiddleware to your application ---
@@ -100,6 +103,15 @@ def create_user(user: User, session: Session = Depends(get_session)):
     session.commit()
     session.refresh(user)
     return user
+
+@app.get("/users/count", response_model=UserCount)
+def get_users_count(session: Session = Depends(get_session)):
+    """
+    Returns the total number of registered users.
+    """
+    # Using func.count() is an efficient way to get the row count from the database
+    count = session.exec(select(func.count(User.id))).one()
+    return {"count": count}
 
 @app.post("/words", response_model=Word)
 def create_word(word: Word, session: Session = Depends(get_session)):

@@ -57,17 +57,19 @@ def create_db_and_tables():
 scheduler = BackgroundScheduler(timezone=pytz.timezone('US/Eastern'))
 
 async def lifespan(app: FastAPI):
-    # Code to run on application startup
     print("Application startup...")
-    create_db_and_tables()
-    # Schedule the job to run every day at 5:00 AM Eastern Time
-    scheduler.add_job(send_daily_word_job, 'cron', hour=hour, minute=minute)
-    scheduler.start()
-    print(f"Scheduler started. Job is scheduled to run daily at {hour}:{minute} Eastern.")
+    try:
+        create_db_and_tables()
+        scheduler.add_job(send_daily_word_job, 'cron', hour=5, minute=0)
+        scheduler.start()
+        print("Scheduler started. Job is scheduled to run daily at 5:00 AM Eastern.")
+    except Exception as e:
+        print(f"FATAL: An error occurred during application startup: {e}")
+        # Optionally re-raise or handle as needed
+        raise
     
     yield
     
-    # Code to run on application shutdown
     print("Application shutdown...")
     scheduler.shutdown()
     print("Scheduler shut down.")

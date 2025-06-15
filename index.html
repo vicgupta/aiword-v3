@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register User</title>
+    <style>
+        :root {
+            --primary-color: #6a5af9;
+            --primary-color-dark: #5a4af7;
+            --background-color: #f3f4f6;
+            --form-background: #ffffff;
+            --text-color: #1f2937;
+            --label-color: #4b5563;
+            --border-color: #d1d5db;
+            --success-color: #10b981;
+            --error-color: #ef4444;
+        }
+
+        /* General Body Styles */
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background: var(--background-color);
+            background: linear-gradient(135deg, #e0eafc 0%, #cfdef3 100%);
+        }
+
+        /* Form Container with animation */
+        .form-container {
+            background-color: var(--form-background);
+            padding: 2.5rem;
+            border-radius: 16px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 420px;
+            box-sizing: border-box;
+            transition: transform 0.3s ease-in-out;
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Form Title */
+        h1 {
+            color: var(--text-color);
+            text-align: center;
+            margin-bottom: 2rem;
+            font-size: 2rem;
+            font-weight: 700;
+        }
+
+        /* Input Fields Styling */
+        .input-group {
+            margin-bottom: 1.5rem;
+            position: relative;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--label-color);
+            font-weight: 500;
+        }
+
+        input[type="text"],
+        input[type="email"] {
+            width: 100%;
+            padding: 0.9rem;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            box-sizing: border-box;
+            font-size: 1rem;
+            background-color: #f9fafb;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        input[type="text"]:focus,
+        input[type="email"]:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(106, 90, 249, 0.2);
+            outline: none;
+        }
+
+        /* Submit Button */
+        button {
+            width: 100%;
+            padding: 0.9rem;
+            border: none;
+            border-radius: 8px;
+            background-color: var(--primary-color);
+            color: white;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s, transform 0.1s;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        button:hover:not(:disabled) {
+            background-color: var(--primary-color-dark);
+        }
+        
+        button:active:not(:disabled) {
+            transform: scale(0.98);
+        }
+
+        button:disabled {
+            background-color: #9ca3af;
+            cursor: not-allowed;
+        }
+
+        /* Loading Spinner */
+        .loader {
+            width: 18px;
+            height: 18px;
+            border: 2px solid #FFF;
+            border-bottom-color: transparent;
+            border-radius: 50%;
+            display: inline-block;
+            box-sizing: border-box;
+            animation: rotation 1s linear infinite;
+            margin-right: 10px;
+        }
+
+        @keyframes rotation {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+
+        /* Message Display Area */
+        #message {
+            margin-top: 1.5rem;
+            text-align: center;
+            font-size: 1rem;
+            min-height: 24px;
+            font-weight: 500;
+        }
+
+        .success {
+            color: var(--success-color);
+        }
+
+        .error {
+            color: var(--error-color);
+        }
+        
+        /* User Counter Styling */
+        .user-counter {
+            text-align: center;
+            margin-top: 2rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--border-color);
+            color: var(--label-color);
+            font-weight: 500;
+            font-size: 0.9rem;
+        }
+
+        #userCount {
+            font-weight: 700;
+            color: var(--primary-color);
+            font-size: 1rem;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="form-container">
+        <h1>Join Us</h1>
+        <form id="userForm">
+            <div class="input-group">
+                <label for="name">Full Name</label>
+                <input type="text" id="name" name="name" required>
+            </div>
+            <div class="input-group">
+                <label for="email">Email Address</label>
+                <input type="email" id="email" name="email" required>
+            </div>
+            <button type="submit" id="submitButton">
+                <span class="button-text">Submit</span>
+            </button>
+        </form>
+        <div id="message"></div>
+        <!-- New element for the user count -->
+        <div class="user-counter">
+            Total Subscribed Users: <span id="userCount">...</span>
+        </div>
+    </div>
+
+    <script>
+        const userForm = document.getElementById('userForm');
+        const messageDiv = document.getElementById('message');
+        const submitButton = document.getElementById('submitButton');
+        const buttonText = submitButton.querySelector('.button-text');
+        const userCountSpan = document.getElementById('userCount');
+
+        // --- API URLs ---
+        const usersApiUrl = 'http://127.0.0.1:8000/users/';
+        const countApiUrl = 'http://127.0.0.1:8000/users/count';
+
+        // ==============================================================================
+        //  TROUBLESHOOTING: "Failed to fetch" Error
+        // ==============================================================================
+        // The "TypeError: Failed to fetch" error almost always means one of two things:
+        //
+        // 1. CORS ERROR: The API server is not configured to allow requests from
+        //    the website where this HTML file is running. The browser blocks the request
+        //    for security reasons.
+        //    FIX: Check your FastAPI `main.py` file. The `allow_origins` list in your
+        //    `CORSMiddleware` must include the origin of this page. For local testing,
+        //    it's common to add "http://127.0.0.1:5500", "http://localhost:5500", or
+        //    even "*" (for development only).
+        //
+        // 2. SERVER NOT RUNNING: The FastAPI server at `http://127.0.0.1:8000` is
+        //    not running or is not accessible.
+        //    FIX: Make sure your `uvicorn` server is running in your terminal without
+        //    any errors.
+        // ==============================================================================
+
+        // Function to fetch and display the current user count
+        async function fetchUserCount() {
+            try {
+                const response = await fetch(countApiUrl);
+                if (response.ok) {
+                    const data = await response.json();
+                    userCountSpan.textContent = data.count;
+                } else {
+                    console.error('Server responded with an error when fetching count:', response.status);
+                    userCountSpan.textContent = 'N/A';
+                }
+            } catch (error) {
+                console.error('Could not fetch user count:', error);
+                userCountSpan.textContent = 'N/A';
+            }
+        }
+
+        // Function to show loading state
+        function showLoading(isLoading) {
+            if (isLoading) {
+                submitButton.disabled = true;
+                buttonText.textContent = 'Submitting...';
+                const loader = document.createElement('span');
+                loader.className = 'loader';
+                submitButton.prepend(loader);
+            } else {
+                submitButton.disabled = false;
+                buttonText.textContent = 'Submit';
+                const loader = submitButton.querySelector('.loader');
+                if (loader) {
+                    loader.remove();
+                }
+            }
+        }
+
+        // Form submission event listener
+        userForm.addEventListener('submit', async function(event) {
+            event.preventDefault();
+            messageDiv.textContent = '';
+            messageDiv.className = '';
+            showLoading(true);
+
+            const formData = {
+                name: document.getElementById('name').value,
+                email: document.getElementById('email').value,
+            };
+
+            const fetchOptions = {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(formData),
+            };
+
+            try {
+                const response = await fetch(usersApiUrl, fetchOptions);
+
+                if (response.ok) {
+                    const result = await response.json();
+                    console.log('Success:', result);
+                    messageDiv.textContent = 'User created successfully!';
+                    messageDiv.className = 'success';
+                    
+                    // Fetch the new count after successful submission
+                    fetchUserCount();
+                    
+                    setTimeout(() => {
+                        userForm.reset();
+                        messageDiv.textContent = '';
+                    }, 2000);
+                } else {
+                    const errorData = await response.json();
+                    console.error('Error:', errorData);
+                    messageDiv.textContent = `Error: ${errorData.detail || 'Could not create user.'}`;
+                    messageDiv.className = 'error';
+                }
+            } catch (error) {
+                // This block is often triggered by a CORS error or if the server is down.
+                console.error('Network error:', error);
+                messageDiv.textContent = 'Network Error: Check API server status and CORS settings.';
+                messageDiv.className = 'error';
+            } finally {
+                if (!messageDiv.classList.contains('success')) {
+                    showLoading(false);
+                } else {
+                    setTimeout(() => {
+                        showLoading(false);
+                    }, 2000);
+                }
+            }
+        });
+        
+        // Fetch the initial count when the page loads
+        document.addEventListener('DOMContentLoaded', fetchUserCount);
+    </script>
+
+</body>
+</html>

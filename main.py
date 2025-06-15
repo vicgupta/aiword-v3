@@ -77,9 +77,8 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 
 origins = [
-    "https://www.hiblazar.com",
+    "http://*.178.156.172.74.sslip.io",
     # "https://www.your-production-frontend.com",
-    "http://localhost:7000",
     "http://localhost:8000",
     "http://127.0.0.1:8000",
     "http://127.0.0.1:5500"

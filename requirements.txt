@@ -1,0 +1,6 @@
+fastapi
+sqlmodel
+uvicorn
+pytz
+apscheduler
+python-dotenv

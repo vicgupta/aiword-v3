@@ -11,8 +11,8 @@ from email.message import EmailMessage
 from dotenv import load_dotenv
 load_dotenv()
 
-hour=5
-minute=35
+hour=9
+minute=56
 
 from apscheduler.schedulers.background import BackgroundScheduler
 import pytz
@@ -37,10 +37,14 @@ class Word(SQLModel, table=True):
     title: str = Field(index=True)
     description: str
     example: str
-    published_date: datetime = Field(default_factory=datetime.utcnow, nullable=False)
+    # published_date: datetime = Field(default_factory=datetime.utcnow, nullable=False)
+    published_date: str = Field(unique=True)
 
 class UserCount(BaseModel):
     count: int
+
+class BulkResponse(BaseModel):
+    message: str
 
 # --- Database Setup ---
 DATABASE_URL = "sqlite:///database.db"
@@ -56,7 +60,6 @@ async def lifespan(app: FastAPI):
     # Code to run on application startup
     print("Application startup...")
     create_db_and_tables()
-    
     # Schedule the job to run every day at 5:00 AM Eastern Time
     scheduler.add_job(send_daily_word_job, 'cron', hour=hour, minute=minute)
     scheduler.start()
@@ -125,6 +128,23 @@ def get_words(session: Session = Depends(get_session)):
     words = session.exec(select(Word)).all()
     return words
 
+@app.post("/words/bulk", response_model=BulkResponse)
+def create_bulk_words(words: List[Word], session: Session = Depends(get_session)):
+    """
+    Accepts a list of word objects and adds them to the database.
+    """
+    try:
+        for word in words:
+            session.add(word)
+        session.commit()
+        return {"message": f"Successfully added {len(words)} words."}
+    except Exception as e:
+        # If any word fails, rollback the entire transaction
+        print ("Error: ", e)
+        session.rollback()
+        # You might want to log the full error `e` on the server for debugging
+        raise HTTPException(status_code=400, detail="An error occurred during bulk upload. No words were added.")
+
 @app.get("/words/today", response_model=Word)
 def get_today_word_endpoint(session: Session = Depends(get_session)):
     """
@@ -142,7 +162,10 @@ def get_word_of_the_day(session: Session) -> Optional[Word]:
     """
     Reusable function to get the most recently published word.
     """
-    return session.exec(select(Word).order_by(Word.published_date.desc())).first()
+    today = str(datetime.now(pytz.timezone('US/Eastern')).date())
+    word_is = session.exec(select(Word).where(Word.published_date == today)).first()
+    # word_is = session.exec(select(Word).order_by(Word.published_date.desc())).first()
+    return word_is
 
 def send_email_to_recipients(subject: str, content: dict, recipients: List[str]):
     """

@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Bulk Upload</title>
+    <style>
+        :root {
+            --primary-color: #d9480f;
+            --primary-color-dark: #c9400a;
+            --background-color: #f8f9fa;
+            --form-background: #ffffff;
+            --text-color: #212529;
+            --label-color: #495057;
+            --border-color: #ced4da;
+            --success-color: #28a745;
+            --error-color: #dc3545;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: var(--background-color);
+        }
+
+        .admin-container {
+            background-color: var(--form-background);
+            padding: 2.5rem;
+            border-radius: 16px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 600px;
+            box-sizing: border-box;
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        h1 {
+            color: var(--text-color);
+            text-align: center;
+            margin-bottom: 1rem;
+            font-size: 2rem;
+            font-weight: 700;
+        }
+
+        p.description {
+            text-align: center;
+            color: var(--label-color);
+            margin-bottom: 2rem;
+        }
+
+        textarea {
+            width: 100%;
+            height: 250px;
+            padding: 1rem;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            box-sizing: border-box;
+            font-size: 0.9rem;
+            font-family: 'Courier New', Courier, monospace;
+            background-color: #f8f9fa;
+            resize: vertical;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        textarea:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(217, 72, 15, 0.2);
+            outline: none;
+        }
+
+        button {
+            width: 100%;
+            padding: 0.9rem;
+            border: none;
+            border-radius: 8px;
+            background-color: var(--primary-color);
+            color: white;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s, transform 0.1s;
+            margin-top: 1rem;
+        }
+
+        button:hover:not(:disabled) {
+            background-color: var(--primary-color-dark);
+        }
+
+        #message {
+            margin-top: 1.5rem;
+            text-align: center;
+            font-size: 1rem;
+            min-height: 24px;
+            font-weight: 500;
+        }
+
+        .success { color: var(--success-color); }
+        .error { color: var(--error-color); }
+    </style>
+</head>
+<body>
+
+    <div class="admin-container">
+        <h1>Bulk Word Upload</h1>
+        <p class="description">
+            Paste a JSON array of word objects into the text area below.
+        </p>
+        <form id="bulkUploadForm">
+            <textarea id="jsonInput" placeholder='[
+  {
+    "title": "Ephemeral",
+    "description": "Lasting for a very short time.",
+    "example": "The beauty of the cherry blossoms is ephemeral.",
+    "published_date": "2025-06-01"
+  },
+  {
+    "title": "Ubiquitous",
+    "description": "Present, appearing, or found everywhere.",
+    "example": "With the rise of smartphones, internet access has become ubiquitous."
+    "published_date": "2025-06-02"
+  }
+]' required></textarea>
+            <button type="submit">Upload Words</button>
+        </form>
+        <div id="message"></div>
+    </div>
+
+    <script>
+        const uploadForm = document.getElementById('bulkUploadForm');
+        const jsonInput = document.getElementById('jsonInput');
+        const messageDiv = document.getElementById('message');
+
+        uploadForm.addEventListener('submit', async function(event) {
+            event.preventDefault();
+            messageDiv.textContent = '';
+            messageDiv.className = '';
+
+            let words;
+            // --- 1. Validate the JSON input from the user ---
+            try {
+                words = JSON.parse(jsonInput.value);
+                if (!Array.isArray(words)) {
+                    throw new Error('Input is not a JSON array.');
+                }
+                if (words.length === 0) {
+                    throw new Error('JSON array is empty.');
+                }
+            } catch (error) {
+                messageDiv.textContent = `Invalid JSON: ${error.message}`;
+                messageDiv.className = 'error';
+                return;
+            }
+
+            // --- 2. Send the validated data to the API ---
+            const apiUrl = 'http://127.0.0.1:8000/words/bulk'; // The new API endpoint
+            
+            const fetchOptions = {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(words), // Send the array of words
+            };
+
+            try {
+                const response = await fetch(apiUrl, fetchOptions);
+                const result = await response.json();
+
+                if (response.ok) {
+                    console.log('Success:', result);
+                    messageDiv.textContent = result.message;
+                    messageDiv.className = 'success';
+                    jsonInput.value = ''; // Clear the textarea on success
+                } else {
+                    console.error('Error:', result);
+                    messageDiv.textContent = `Error: ${result.detail || 'Could not upload words.'}`;
+                    messageDiv.className = 'error';
+                }
+            } catch (error) {
+                console.error('Network Error:', error);
+                messageDiv.textContent = 'Network error. Could not connect to the API.';
+                messageDiv.className = 'error';
+            }
+        });
+    </script>
+
+</body>
+</html>

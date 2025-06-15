@@ -70,8 +70,6 @@ async def lifespan(app: FastAPI):
 # The lifespan manager is passed here instead of using decorators
 app = FastAPI(lifespan=lifespan)
 
-# This is a list of the domains that are allowed to make requests to your API.
-# You should replace these with your actual frontend domains.
 origins = [
     "https://www.hiblazar.com"
     # "https://www.your-production-frontend.com",
